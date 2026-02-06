@@ -1,20 +1,16 @@
+import os
 import requests
 import json
+
+OPENAI_KEY = os.getenv("OPENAI_API_KEY")
 
 OLLAMA_URL = "http://127.0.0.1:11434/api/chat"
 
 
 def ask_ai(answer):
 
-    messages = [
-        {
-            "role": "system",
-            "content": "You are a professional technical interviewer. Be concise."
-        },
-        {
-            "role": "user",
-            "content": f"""
-Evaluate this answer.
+    prompt = f"""
+You are a professional interviewer.
 
 Give:
 1. Score (1-10)
@@ -23,37 +19,65 @@ Give:
 4. One improvement
 5. Next question
 
-Max 5 lines.
-
 Answer:
 {answer}
 """
+
+    # ---------- CLOUD MODE ----------
+    if OPENAI_KEY:
+
+        headers = {
+            "Authorization": f"Bearer {OPENAI_KEY}",
+            "Content-Type": "application/json"
         }
-    ]
 
-    payload = {
-        "model": "phi",
-        "messages": messages,
-        "stream": False
-    }
+        payload = {
+            "model": "gpt-4o-mini",
+            "messages": [
+                {"role": "system", "content": "You are an interviewer."},
+                {"role": "user", "content": prompt}
+            ]
+        }
 
-    headers = {
-        "Content-Type": "application/json"
-    }
+        try:
+            res = requests.post(
+                "https://api.openai.com/v1/chat/completions",
+                headers=headers,
+                json=payload,
+                timeout=60
+            )
 
-    try:
-        res = requests.post(
-            OLLAMA_URL,
-            headers=headers,
-            data=json.dumps(payload),
-            timeout=300
-        )
+            res.raise_for_status()
 
-        res.raise_for_status()
+            return res.json()["choices"][0]["message"]["content"]
 
-        data = res.json()
+        except Exception as e:
+            return f"CLOUD_AI_ERROR: {str(e)}"
 
-        return data["message"]["content"]
 
-    except Exception as e:
-        return f"LOCAL_AI_ERROR: {str(e)}"
+    # ---------- LOCAL MODE ----------
+    else:
+
+        payload = {
+            "model": "phi",
+            "messages": [
+                {"role": "system", "content": "You are an interviewer."},
+                {"role": "user", "content": prompt}
+            ],
+            "stream": False
+        }
+
+        try:
+
+            res = requests.post(
+                OLLAMA_URL,
+                json=payload,
+                timeout=180
+            )
+
+            res.raise_for_status()
+
+            return res.json()["message"]["content"]
+
+        except Exception as e:
+            return f"LOCAL_AI_ERROR: {str(e)}"
