@@ -2,82 +2,59 @@ import os
 import requests
 import json
 
-OPENAI_KEY = os.getenv("OPENAI_API_KEY")
+# Gemini API Key
+GEMINI_KEY = os.getenv("GEMINI_API_KEY")
 
-OLLAMA_URL = "http://127.0.0.1:11434/api/chat"
+GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent"
 
 
 def ask_ai(answer):
 
+    if not GEMINI_KEY:
+        return "ERROR: Gemini API key not found"
+
     prompt = f"""
-You are a professional interviewer.
+You are a professional technical interviewer.
 
 Give:
 1. Score (1-10)
-2. One strength
-3. One weakness
-4. One improvement
+2. Strength
+3. Weakness
+4. Improvement
 5. Next question
 
 Answer:
 {answer}
 """
 
-    # ---------- CLOUD MODE ----------
-    if OPENAI_KEY:
+    headers = {
+        "Content-Type": "application/json"
+    }
 
-        headers = {
-            "Authorization": f"Bearer {OPENAI_KEY}",
-            "Content-Type": "application/json"
-        }
+    payload = {
+        "contents": [
+            {
+                "parts": [
+                    {"text": prompt}
+                ]
+            }
+        ]
+    }
 
-        payload = {
-            "model": "gpt-4o-mini",
-            "messages": [
-                {"role": "system", "content": "You are an interviewer."},
-                {"role": "user", "content": prompt}
-            ]
-        }
+    try:
 
-        try:
-            res = requests.post(
-                "https://api.openai.com/v1/chat/completions",
-                headers=headers,
-                json=payload,
-                timeout=60
-            )
+        res = requests.post(
+            f"{GEMINI_URL}?key={GEMINI_KEY}",
+            headers=headers,
+            json=payload,
+            timeout=60
+        )
 
-            res.raise_for_status()
+        res.raise_for_status()
 
-            return res.json()["choices"][0]["message"]["content"]
+        data = res.json()
 
-        except Exception as e:
-            return f"CLOUD_AI_ERROR: {str(e)}"
+        return data["candidates"][0]["content"]["parts"][0]["text"]
 
-
-    # ---------- LOCAL MODE ----------
-    else:
-
-        payload = {
-            "model": "phi",
-            "messages": [
-                {"role": "system", "content": "You are an interviewer."},
-                {"role": "user", "content": prompt}
-            ],
-            "stream": False
-        }
-
-        try:
-
-            res = requests.post(
-                OLLAMA_URL,
-                json=payload,
-                timeout=180
-            )
-
-            res.raise_for_status()
-
-            return res.json()["message"]["content"]
-
-        except Exception as e:
-            return f"LOCAL_AI_ERROR: {str(e)}"
+    except Exception as e:
+        return f"GEMINI_ERROR: {str(e)}"

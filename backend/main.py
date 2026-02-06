@@ -1,9 +1,11 @@
 import os
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import google.generativeai as genai
 
-# Load API Key from Render Environment
+
+# Load Gemini Key
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 if not GEMINI_API_KEY:
@@ -14,14 +16,24 @@ genai.configure(api_key=GEMINI_API_KEY)
 # Initialize Gemini
 model = genai.GenerativeModel("gemini-pro")
 
+
 # Create App
 app = FastAPI(title="AI Mock Interview API")
 
 
+# Enable CORS (for frontend)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+# Request model (matches frontend)
 class InterviewRequest(BaseModel):
-    role: str
-    experience: str
-    topic: str
+    answer: str
 
 
 # Health Check
@@ -33,22 +45,33 @@ def home():
 # Interview API
 @app.post("/interview")
 def interview(req: InterviewRequest):
-    try:
-        prompt = f"""
-You are a professional interviewer.
 
-Role: {req.role}
-Experience: {req.experience}
-Topic: {req.topic}
+    prompt = f"""
+You are a professional technical interviewer.
 
-Ask 5 technical interview questions.
-Give feedback.
-Be strict.
+Evaluate this answer:
+
+"{req.answer}"
+
+Give:
+1. Score (1-10)
+2. Strength
+3. Weakness
+4. Improvement
+5. Next question
 """
+
+    try:
 
         response = model.generate_content(prompt)
 
-        return {"result": response.text}
+        return {"reply": response.text}
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        return {"reply": f"GEMINI_ERROR: {str(e)}"}
+
+
+# History (dummy for now)
+@app.get("/history")
+def history():
+    return []
