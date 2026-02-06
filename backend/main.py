@@ -1,22 +1,22 @@
 import os
+import requests
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import google.generativeai as genai
 
 
-# Load Gemini Key
+# Load API Key
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 if not GEMINI_API_KEY:
     raise ValueError("GEMINI_API_KEY missing")
 
 
-# Configure Gemini
-genai.configure(api_key=GEMINI_API_KEY)
-
-# Use default model (auto selected)
-model = genai.GenerativeModel("models/text-bison-001")
+# Gemini REST Endpoint (latest stable)
+GEMINI_URL = (
+    "https://generativelanguage.googleapis.com/v1/models/"
+    "gemini-1.5-flash:generateContent"
+)
 
 
 # Create App
@@ -63,17 +63,37 @@ Give:
 5. Next Question
 """
 
+    payload = {
+        "contents": [
+            {
+                "parts": [
+                    {"text": prompt}
+                ]
+            }
+        ]
+    }
+
     try:
 
-        response = model.generate_content(prompt)
+        res = requests.post(
+            f"{GEMINI_URL}?key={GEMINI_API_KEY}",
+            json=payload,
+            timeout=60
+        )
 
-        return {"reply": response.text}
+        res.raise_for_status()
+
+        data = res.json()
+
+        return {
+            "reply": data["candidates"][0]["content"]["parts"][0]["text"]
+        }
 
     except Exception as e:
         return {"reply": f"GEMINI_ERROR: {str(e)}"}
 
 
-# History
+# History placeholder
 @app.get("/history")
 def history():
     return []
