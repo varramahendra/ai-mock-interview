@@ -1,62 +1,54 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from ai import ask_ai
-import sqlite3
+import os
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+import google.generativeai as genai
 
-app = FastAPI()
+# Load API Key from Render Environment
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
-# CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+if not GEMINI_API_KEY:
+    raise ValueError("GEMINI_API_KEY is missing")
 
-# DB Init
-conn = sqlite3.connect("interviews.db", check_same_thread=False)
-cursor = conn.cursor()
+genai.configure(api_key=GEMINI_API_KEY)
 
-cursor.execute("""
-CREATE TABLE IF NOT EXISTS history (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    answer TEXT,
-    feedback TEXT
-)
-""")
+# Initialize Gemini
+model = genai.GenerativeModel("gemini-pro")
 
-conn.commit()
+# Create App
+app = FastAPI(title="AI Mock Interview API")
 
 
+class InterviewRequest(BaseModel):
+    role: str
+    experience: str
+    topic: str
+
+
+# Health Check
 @app.get("/")
 def home():
-    return {"message": "AI Mock Interview API Running"}
+    return {"status": "Server Running"}
 
 
+# Interview API
 @app.post("/interview")
-async def interview(data: dict):
+def interview(req: InterviewRequest):
+    try:
+        prompt = f"""
+You are a professional interviewer.
 
-    answer = data.get("answer")
+Role: {req.role}
+Experience: {req.experience}
+Topic: {req.topic}
 
-    if not answer:
-        return {"error": "Answer required"}
+Ask 5 technical interview questions.
+Give feedback.
+Be strict.
+"""
 
-    reply = ask_ai(answer)
+        response = model.generate_content(prompt)
 
-    # Save to DB
-    cursor.execute(
-        "INSERT INTO history (answer, feedback) VALUES (?, ?)",
-        (answer, reply)
-    )
-    conn.commit()
+        return {"result": response.text}
 
-    return {"reply": reply}
-
-
-@app.get("/history")
-def get_history():
-
-    cursor.execute("SELECT * FROM history ORDER BY id DESC LIMIT 20")
-    rows = cursor.fetchall()
-
-    return rows
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
