@@ -1,0 +1,82 @@
+body {
+  background: #f4f6f9;
+  font-family: Arial, sans-serif;
+}
+
+.container {
+  width: 80%;
+  max-width: 900px;
+  margin: 40px auto;
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 0 15px #ccc;
+}
+
+h2 {
+  text-align: center;
+}
+
+.chat-box {
+  height: 450px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  padding: 10px;
+  margin-bottom: 15px;
+  background: #fafafa;
+}
+
+.user {
+  background: #007bff;
+  color: white;
+  padding: 8px;
+  margin: 5px;
+  border-radius: 5px;
+  text-align: right;
+}
+
+.ai {
+  background: #e9ecef;
+  padding: 8px;
+  margin: 5px;
+  border-radius: 5px;
+}
+
+.loader {
+  color: #555;
+  font-style: italic;
+  margin: 10px;
+}
+
+.input-box {
+  display: flex;
+  gap: 8px;
+}
+
+input {
+  flex: 1;
+  padding: 8px;
+  font-size: 14px;
+}
+
+button {
+  padding: 8px 15px;
+  background: #007bff;
+  color: white;
+  border: none;
+  cursor: pointer;
+  border-radius: 5px;
+}
+
+button:hover {
+  background: #0056b3;
+}
+.history-btn {
+  background: #28a745;
+  margin-bottom: 10px;
+}
+
+.history-btn:hover {
+  background: #1e7e34;
+}
+
