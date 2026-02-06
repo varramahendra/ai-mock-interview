@@ -5,16 +5,18 @@ from pydantic import BaseModel
 import google.generativeai as genai
 
 
-# Load Gemini Key
+# Load Gemini API Key
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 if not GEMINI_API_KEY:
     raise ValueError("GEMINI_API_KEY is missing")
 
+
+# Configure Gemini
 genai.configure(api_key=GEMINI_API_KEY)
 
-# Initialize Gemini
-model = genai.GenerativeModel("gemini-pro")
+# Use latest working model
+model = genai.GenerativeModel("gemini-1.5-flash")
 
 
 # Create App
@@ -31,7 +33,7 @@ app.add_middleware(
 )
 
 
-# Request model (matches frontend)
+# Request Model (matches frontend)
 class InterviewRequest(BaseModel):
     answer: str
 
@@ -58,11 +60,10 @@ Give:
 2. Strength
 3. Weakness
 4. Improvement
-5. Next question
+5. Next Question
 """
 
     try:
-
         response = model.generate_content(prompt)
 
         return {"reply": response.text}
@@ -71,7 +72,7 @@ Give:
         return {"reply": f"GEMINI_ERROR: {str(e)}"}
 
 
-# History (dummy for now)
+# History (simple placeholder)
 @app.get("/history")
 def history():
     return []
