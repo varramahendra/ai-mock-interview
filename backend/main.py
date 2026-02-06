@@ -5,25 +5,25 @@ from pydantic import BaseModel
 import google.generativeai as genai
 
 
-# Load Gemini API Key
+# Load Gemini Key
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 if not GEMINI_API_KEY:
-    raise ValueError("GEMINI_API_KEY is missing")
+    raise ValueError("GEMINI_API_KEY missing")
 
 
 # Configure Gemini
 genai.configure(api_key=GEMINI_API_KEY)
 
-# Use latest working model
-model = genai.GenerativeModel("gemini-1.5-flash")
+# Use default model (auto selected)
+model = genai.GenerativeModel("models/text-bison-001")
 
 
 # Create App
 app = FastAPI(title="AI Mock Interview API")
 
 
-# Enable CORS (for frontend)
+# Enable CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -33,12 +33,12 @@ app.add_middleware(
 )
 
 
-# Request Model (matches frontend)
+# Request Schema
 class InterviewRequest(BaseModel):
     answer: str
 
 
-# Health Check
+# Health
 @app.get("/")
 def home():
     return {"status": "Server Running"}
@@ -64,6 +64,7 @@ Give:
 """
 
     try:
+
         response = model.generate_content(prompt)
 
         return {"reply": response.text}
@@ -72,7 +73,7 @@ Give:
         return {"reply": f"GEMINI_ERROR: {str(e)}"}
 
 
-# History (simple placeholder)
+# History
 @app.get("/history")
 def history():
     return []
